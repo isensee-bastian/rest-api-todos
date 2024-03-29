@@ -19,7 +19,7 @@ type Todo struct {
 }
 
 func handleWelcome(writer http.ResponseWriter, request *http.Request) {
-	fmt.Fprintf(writer, "Welcome to this Todo list application!\n")
+	fmt.Fprintf(writer, "Welcome to this Todo list application!")
 }
 
 func handleTodoPost(writer http.ResponseWriter, request *http.Request) {
