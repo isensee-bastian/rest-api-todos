@@ -83,7 +83,30 @@ func handleGet(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(writer, "%s", data)
+}
 
+func handleDelete(writer http.ResponseWriter, request *http.Request) {
+	rawIndex := request.PathValue("index")
+	if rawIndex == "" {
+		http.Error(writer, "Missing index value in path", http.StatusBadRequest)
+		return
+	}
+
+	index, err := strconv.Atoi(rawIndex)
+	if err != nil {
+		http.Error(writer, "Index value in path must be an integer", http.StatusBadRequest)
+		return
+	}
+
+	if index >= len(allTodos) {
+		http.Error(writer, "Index value in path must be smaller than todo list length", http.StatusBadRequest)
+		return
+	}
+
+	// Remove the specified element by reslicing. This is fine here since our todo
+	// list is expected to be relatively small. It would not be a good idea for large
+	// slices though due to performance reasons.
+	allTodos = append(allTodos[:index], allTodos[index+1:]...)
 }
 
 func makeMux() *http.ServeMux {
@@ -95,6 +118,7 @@ func makeMux() *http.ServeMux {
 	mux.HandleFunc("GET /todo/{index}", handleGet)
 	mux.HandleFunc("GET /todo/all", handleGetAll)
 	mux.HandleFunc("POST /todo", handlePost)
+	mux.HandleFunc("DELETE /todo/{index}", handleDelete)
 
 	return mux
 }

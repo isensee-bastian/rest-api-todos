@@ -46,6 +46,13 @@ func TestTodoApi(t *testing.T) {
 		get(t, lastIndex, expected[lastIndex], server.URL)
 	})
 
+	t.Run("Delete a todo", func(t *testing.T) {
+		lastIndex := len(expected) - 1
+		del(t, lastIndex, server.URL)
+
+		expected := expected[:len(expected)-1]
+		getAll(t, expected, server.URL)
+	})
 }
 
 func post(t *testing.T, todo Todo, baseUrl string) {
@@ -64,6 +71,27 @@ func post(t *testing.T, todo Todo, baseUrl string) {
 
 	if res.StatusCode != 201 {
 		t.Fatalf("Expected status 201 but got %v", res.StatusCode)
+	}
+}
+
+func del(t *testing.T, index int, baseUrl string) {
+	url := fmt.Sprintf("%s/todo/%d", baseUrl, index)
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+
+	if err != nil {
+		t.Fatalf("Error on http request creation: %v", err)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		t.Fatalf("Error on http request: %v", err)
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		t.Fatalf("Expected status 200 but got %v", res.StatusCode)
 	}
 }
 
