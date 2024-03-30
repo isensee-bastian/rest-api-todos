@@ -23,12 +23,6 @@ func handleWelcome(writer http.ResponseWriter, request *http.Request) {
 }
 
 func handleTodoPost(writer http.ResponseWriter, request *http.Request) {
-	if request.Method != "POST" {
-		writer.Header().Set("Allow", "POST")
-		writer.WriteHeader(405) // Method not allowed.
-		return
-	}
-
 	body, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		http.Error(writer, "Failed to read request body", http.StatusBadRequest)
@@ -49,12 +43,6 @@ func handleTodoPost(writer http.ResponseWriter, request *http.Request) {
 }
 
 func handleTodoGetAll(writer http.ResponseWriter, request *http.Request) {
-	if request.Method != "GET" {
-		writer.Header().Set("Allow", "GET")
-		writer.WriteHeader(405) // Method not allowed.
-		return
-	}
-
 	data, err := json.Marshal(allTodos)
 
 	if err != nil {
@@ -66,10 +54,20 @@ func handleTodoGetAll(writer http.ResponseWriter, request *http.Request) {
 	fmt.Fprintf(writer, "%s", data)
 }
 
-func main() {
-	http.HandleFunc("/", handleWelcome)
-	http.HandleFunc("/todo/all", handleTodoGetAll)
-	http.HandleFunc("/todo", handleTodoPost)
+func makeMux() *http.ServeMux {
+	mux := http.NewServeMux()
 
-	http.ListenAndServe(":8090", nil)
+	// Important: Make sure your Go version is 1.22.1 or higher as
+	// there have been multiple changes to the mux routing.
+	mux.HandleFunc("GET /{$}", handleWelcome) // Note {$} to match exactly root.
+	mux.HandleFunc("GET /todo/all", handleTodoGetAll)
+	mux.HandleFunc("POST /todo", handleTodoPost)
+
+	return mux
+}
+
+func main() {
+	mux := makeMux()
+	fmt.Println("Listening for requests...")
+	http.ListenAndServe(":8090", mux)
 }

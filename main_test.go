@@ -11,6 +11,14 @@ import (
 )
 
 func TestCrudApi(t *testing.T) {
+	server := httptest.NewServer(makeMux())
+	defer server.Close()
+	t.Logf("Server started at %s", server.URL)
+
+	t.Run("Check service available", func(t *testing.T) {
+		welcome(t, server.URL)
+	})
+
 	var expected = []Todo{
 		{Name: "study for math exam"},
 		{Name: "take the trash out"},
@@ -18,29 +26,29 @@ func TestCrudApi(t *testing.T) {
 	}
 
 	t.Run("Get all initial todos", func(t *testing.T) {
-		todoGetAll(t, expected)
+		todoGetAll(t, expected, server.URL)
 	})
 	t.Run("Post a new todo", func(t *testing.T) {
 		todo := Todo{Name: "eat some vegetables"}
-		todoPost(t, todo)
+		todoPost(t, todo, server.URL)
 
 		expected = append(expected, todo)
-		todoGetAll(t, expected)
+		todoGetAll(t, expected, server.URL)
 	})
 }
 
-func todoPost(t *testing.T, todo Todo) {
+func todoPost(t *testing.T, todo Todo, baseUrl string) {
 	data, err := json.Marshal(todo)
 
 	if err != nil {
 		t.Fatalf("Unexpected error on Todo json marshalling: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/todo", bytes.NewBuffer(data))
-	rec := httptest.NewRecorder()
+	res, err := http.Post(baseUrl+"/todo", "application/json", bytes.NewBuffer(data))
+	if err != nil {
+		t.Fatalf("Error on http request: %v", err)
+	}
 
-	handleTodoPost(rec, req)
-	res := rec.Result()
 	defer res.Body.Close()
 
 	if res.StatusCode != 201 {
@@ -48,12 +56,12 @@ func todoPost(t *testing.T, todo Todo) {
 	}
 }
 
-func todoGetAll(t *testing.T, expected []Todo) {
-	req := httptest.NewRequest(http.MethodGet, "/todo/all", nil)
-	rec := httptest.NewRecorder()
+func todoGetAll(t *testing.T, expected []Todo, baseUrl string) {
+	res, err := http.Get(baseUrl + "/todo/all")
+	if err != nil {
+		t.Fatalf("Error on http request: %v", err)
+	}
 
-	handleTodoGetAll(rec, req)
-	res := rec.Result()
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
@@ -76,12 +84,12 @@ func todoGetAll(t *testing.T, expected []Todo) {
 	}
 }
 
-func TestWelcome(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
+func welcome(t *testing.T, baseUrl string) {
+	res, err := http.Get(baseUrl + "/")
+	if err != nil {
+		t.Fatalf("Error on request: %v", err)
+	}
 
-	handleWelcome(rec, req)
-	res := rec.Result()
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
