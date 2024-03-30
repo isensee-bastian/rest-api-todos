@@ -46,11 +46,28 @@ func TestTodoApi(t *testing.T) {
 		get(t, lastIndex, expected[lastIndex], server.URL)
 	})
 
-	t.Run("Delete a todo", func(t *testing.T) {
+	t.Run("Put (replace) a todo", func(t *testing.T) {
+		todo := Todo{Name: "go for a walk", Completed: true}
+		put(t, 1, todo, server.URL)
+
+		expected[1] = todo
+		getAll(t, expected, server.URL)
+	})
+
+	t.Run("Delete a specific todo", func(t *testing.T) {
 		lastIndex := len(expected) - 1
 		del(t, lastIndex, server.URL)
 
-		expected := expected[:len(expected)-1]
+		expected := expected[:lastIndex]
+		getAll(t, expected, server.URL)
+	})
+
+	t.Run("Delete todos until list is empty", func(t *testing.T) {
+		for index := 0; index < len(expected)-1; index++ {
+			del(t, 0, server.URL)
+		}
+
+		expected = []Todo{}
 		getAll(t, expected, server.URL)
 	})
 }
@@ -71,6 +88,33 @@ func post(t *testing.T, todo Todo, baseUrl string) {
 
 	if res.StatusCode != 201 {
 		t.Fatalf("Expected status 201 but got %v", res.StatusCode)
+	}
+}
+
+func put(t *testing.T, index int, todo Todo, baseUrl string) {
+	data, err := json.Marshal(todo)
+
+	if err != nil {
+		t.Fatalf("Unexpected error on Todo json marshalling: %v", err)
+	}
+
+	url := fmt.Sprintf("%s/todo/%d", baseUrl, index)
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(data))
+
+	if err != nil {
+		t.Fatalf("Error on http request creation: %v", err)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		t.Fatalf("Error on http request: %v", err)
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		t.Fatalf("Expected status 200 but got %v", res.StatusCode)
 	}
 }
 
@@ -149,6 +193,8 @@ func getAll(t *testing.T, expected []Todo, baseUrl string) {
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Expected todos %+v but got %+v", expected, actual)
 	}
+
+	t.Logf("Received all todos: %v", actual)
 }
 
 func welcome(t *testing.T, baseUrl string) {
