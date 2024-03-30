@@ -74,16 +74,10 @@ func TestTodoApi(t *testing.T) {
 
 func post(t *testing.T, todo Todo, baseUrl string) {
 	data, err := json.Marshal(todo)
-
-	if err != nil {
-		t.Fatalf("Unexpected error on Todo json marshalling: %v", err)
-	}
+	check(t, err, "json marshalling")
 
 	res, err := http.Post(baseUrl+"/todo", "application/json", bytes.NewBuffer(data))
-	if err != nil {
-		t.Fatalf("Error on http request: %v", err)
-	}
-
+	check(t, err, "http request sending")
 	defer res.Body.Close()
 
 	if res.StatusCode != 201 {
@@ -93,24 +87,14 @@ func post(t *testing.T, todo Todo, baseUrl string) {
 
 func put(t *testing.T, index int, todo Todo, baseUrl string) {
 	data, err := json.Marshal(todo)
-
-	if err != nil {
-		t.Fatalf("Unexpected error on Todo json marshalling: %v", err)
-	}
+	check(t, err, "json marshalling")
 
 	url := fmt.Sprintf("%s/todo/%d", baseUrl, index)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(data))
-
-	if err != nil {
-		t.Fatalf("Error on http request creation: %v", err)
-	}
+	check(t, err, "http request creation")
 
 	res, err := http.DefaultClient.Do(req)
-
-	if err != nil {
-		t.Fatalf("Error on http request: %v", err)
-	}
-
+	check(t, err, "http request sending")
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
@@ -121,17 +105,10 @@ func put(t *testing.T, index int, todo Todo, baseUrl string) {
 func del(t *testing.T, index int, baseUrl string) {
 	url := fmt.Sprintf("%s/todo/%d", baseUrl, index)
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
-
-	if err != nil {
-		t.Fatalf("Error on http request creation: %v", err)
-	}
+	check(t, err, "http request creation")
 
 	res, err := http.DefaultClient.Do(req)
-
-	if err != nil {
-		t.Fatalf("Error on http request: %v", err)
-	}
-
+	check(t, err, "http request sending")
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
@@ -141,10 +118,7 @@ func del(t *testing.T, index int, baseUrl string) {
 
 func get(t *testing.T, index int, expected Todo, baseUrl string) {
 	res, err := http.Get(fmt.Sprintf("%s/todo/%d", baseUrl, index))
-	if err != nil {
-		t.Fatalf("Error on http request: %v", err)
-	}
-
+	check(t, err, "http request sending")
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
@@ -152,15 +126,11 @@ func get(t *testing.T, index int, expected Todo, baseUrl string) {
 	}
 
 	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Fatalf("Unexpected error on body reading: %v", err)
-	}
+	check(t, err, "response body reading")
 
 	var actual Todo
 	err = json.Unmarshal(data, &actual)
-	if err != nil {
-		t.Fatalf("Unexpected error on body parsing: %v", err)
-	}
+	check(t, err, "response body parsing")
 
 	if expected != actual {
 		t.Fatalf("Expected todo %+v but got %+v", expected, actual)
@@ -169,10 +139,7 @@ func get(t *testing.T, index int, expected Todo, baseUrl string) {
 
 func getAll(t *testing.T, expected []Todo, baseUrl string) {
 	res, err := http.Get(baseUrl + "/todo/all")
-	if err != nil {
-		t.Fatalf("Error on http request: %v", err)
-	}
-
+	check(t, err, "http request sending")
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
@@ -180,29 +147,29 @@ func getAll(t *testing.T, expected []Todo, baseUrl string) {
 	}
 
 	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Fatalf("Unexpected error on body reading: %v", err)
-	}
+	check(t, err, "response body reading")
 
 	var actual []Todo
 	err = json.Unmarshal(data, &actual)
-	if err != nil {
-		t.Fatalf("Unexpected error on body parsing: %v", err)
-	}
+	check(t, err, "response body parsing")
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Expected todos %+v but got %+v", expected, actual)
 	}
 
-	t.Logf("Received all todos: %v", actual)
+	t.Logf("Received todo list: %v", actual)
+}
+
+func check(t *testing.T, err error, contextInfo string) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("Error on %s: %v", contextInfo, err)
+	}
 }
 
 func welcome(t *testing.T, baseUrl string) {
 	res, err := http.Get(baseUrl + "/")
-	if err != nil {
-		t.Fatalf("Error on request: %v", err)
-	}
-
+	check(t, err, "http request sending")
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
@@ -210,9 +177,7 @@ func welcome(t *testing.T, baseUrl string) {
 	}
 
 	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
+	check(t, err, "response body reading")
 
 	if expected := "Welcome to this Todo list application!"; string(data) != expected {
 		t.Fatalf("Expected body '%v' but got '%v'", expected, string(data))
