@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
@@ -45,9 +46,16 @@ func handlePost(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusCreated)
 }
 
-// handeGetAll returns the complete todo list.
+// handeGetAll returns all todos, optionally filtered by their completion state.
 func handleGetAll(writer http.ResponseWriter, request *http.Request) {
-	data, err := json.Marshal(allTodos)
+	filteredTodos, err := filterTodos(writer, request.URL.Query())
+
+	if err != nil {
+		handleError(writer, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	data, err := json.Marshal(filteredTodos)
 
 	if err != nil {
 		handleError(writer, "Failed to create response body", http.StatusInternalServerError)
@@ -132,6 +140,29 @@ func parseIndex(rawIndex string, writer http.ResponseWriter) int {
 	}
 
 	return index
+}
+
+func filterTodos(writer http.ResponseWriter, queryParams url.Values) ([]Todo, error) {
+	values, found := queryParams["completed"]
+
+	if found && len(values) > 0 {
+		filterValue, err := strconv.ParseBool(values[0])
+
+		if err != nil {
+			return nil, fmt.Errorf("Invalid query string, expecting boolean value")
+		}
+
+		filtered := []Todo{}
+		for _, todo := range allTodos {
+			if todo.Completed == filterValue {
+				filtered = append(filtered, todo)
+			}
+		}
+
+		return filtered, nil
+	}
+
+	return allTodos, nil
 }
 
 func handleError(writer http.ResponseWriter, message string, statusCode int) {

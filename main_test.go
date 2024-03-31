@@ -27,7 +27,7 @@ func TestTodoApi(t *testing.T) {
 	}
 
 	t.Run("Get all initial todos", func(t *testing.T) {
-		getAll(t, expected, server.URL)
+		getAll(t, expected, "", server.URL)
 	})
 
 	t.Run("Get a specific todo", func(t *testing.T) {
@@ -40,7 +40,7 @@ func TestTodoApi(t *testing.T) {
 		post(t, todo, server.URL)
 
 		expected = append(expected, todo)
-		getAll(t, expected, server.URL)
+		getAll(t, expected, "", server.URL)
 
 		lastIndex := len(expected) - 1
 		get(t, lastIndex, expected[lastIndex], server.URL)
@@ -51,7 +51,19 @@ func TestTodoApi(t *testing.T) {
 		put(t, 1, todo, server.URL)
 
 		expected[1] = todo
-		getAll(t, expected, server.URL)
+		getAll(t, expected, "", server.URL)
+	})
+
+	t.Run("Get all incomplete todos", func(t *testing.T) {
+		incomplete := []Todo{}
+
+		for _, todo := range expected {
+			if !todo.Completed {
+				incomplete = append(incomplete, todo)
+			}
+		}
+
+		getAll(t, incomplete, "completed=false", server.URL)
 	})
 
 	t.Run("Delete a specific todo", func(t *testing.T) {
@@ -59,7 +71,7 @@ func TestTodoApi(t *testing.T) {
 		del(t, lastIndex, server.URL)
 
 		expected := expected[:lastIndex]
-		getAll(t, expected, server.URL)
+		getAll(t, expected, "", server.URL)
 	})
 
 	t.Run("Delete todos until list is empty", func(t *testing.T) {
@@ -68,7 +80,7 @@ func TestTodoApi(t *testing.T) {
 		}
 
 		expected = []Todo{}
-		getAll(t, expected, server.URL)
+		getAll(t, expected, "", server.URL)
 	})
 }
 
@@ -137,8 +149,14 @@ func get(t *testing.T, index int, expected Todo, baseUrl string) {
 	}
 }
 
-func getAll(t *testing.T, expected []Todo, baseUrl string) {
-	res, err := http.Get(baseUrl + "/todo/all")
+func getAll(t *testing.T, expected []Todo, queryParams string, baseUrl string) {
+	url := baseUrl + "/todo/all"
+
+	if queryParams != "" {
+		url += "?" + queryParams
+	}
+
+	res, err := http.Get(url)
 	check(t, err, "http request sending")
 	defer res.Body.Close()
 
