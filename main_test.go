@@ -21,9 +21,9 @@ func TestTodoApi(t *testing.T) {
 	})
 
 	var expected = []Todo{
-		{Name: "study for math exam"},
-		{Name: "take the trash out"},
-		{Name: "watch golang tutorial"},
+		{Title: "study for math exam"},
+		{Title: "take the trash out"},
+		{Title: "watch golang tutorial"},
 	}
 
 	t.Run("Get all initial todos", func(t *testing.T) {
@@ -36,7 +36,7 @@ func TestTodoApi(t *testing.T) {
 	})
 
 	t.Run("Post a new todo", func(t *testing.T) {
-		todo := Todo{Name: "eat some vegetables"}
+		todo := Todo{Title: "eat some vegetables"}
 		post(t, todo, server.URL)
 
 		expected = append(expected, todo)
@@ -47,7 +47,7 @@ func TestTodoApi(t *testing.T) {
 	})
 
 	t.Run("Put (replace) a todo", func(t *testing.T) {
-		todo := Todo{Name: "go for a walk", Completed: true}
+		todo := Todo{Title: "go for a walk", Completed: true}
 		put(t, 1, todo, server.URL)
 
 		expected[1] = todo

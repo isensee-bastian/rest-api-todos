@@ -10,13 +10,13 @@ import (
 
 // Provide some initial example todos.
 var allTodos = []Todo{
-	{Name: "study for math exam"},
-	{Name: "take the trash out"},
-	{Name: "watch golang tutorial"},
+	{Title: "study for math exam"},
+	{Title: "take the trash out"},
+	{Title: "watch golang tutorial"},
 }
 
 type Todo struct {
-	Name      string `json:"name"`
+	Title     string `json:"title"`
 	Completed bool   `json:"completed"`
 }
 
